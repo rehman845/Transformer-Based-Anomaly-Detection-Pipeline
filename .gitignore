@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+env/
+venv/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+
+# Data artifacts
+data/
+outputs/
+checkpoints/
+
+# Notebooks
+.ipynb_checkpoints/
+
