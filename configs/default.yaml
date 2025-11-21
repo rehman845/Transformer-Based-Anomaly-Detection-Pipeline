@@ -1,0 +1,45 @@
+seed: 42
+device: "cuda"
+dataset:
+  name: "smd"
+  machine_id: "machine-1-1"
+  sequence_length: 128
+  stride: 32
+  train_split: 0.8
+  normalize: true
+masking:
+  mask_ratio: 0.25
+  geometric_p: 0.2
+  mask_value: 0.0
+model:
+  input_dim: null  # inferred at runtime
+  d_model: 128
+  nhead: 4
+  num_encoder_layers: 4
+  num_decoder_layers: 2
+  dim_feedforward: 256
+  dropout: 0.1
+  latent_dim: 64
+contrastive:
+  temperature: 0.2
+  projection_dim: 64
+gan:
+  noise_dim: 32
+  hidden_dim: 128
+training:
+  epochs: 50
+  batch_size: 64
+  learning_rate: 0.00015
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  reconstruction_weight: 1.0
+  mask_weight: 1.0
+  contrastive_weight: 0.5
+  adversarial_weight: 0.1
+  discriminator_steps: 1
+evaluation:
+  threshold_percentile: 95
+logging:
+  log_dir: "outputs/logs"
+  checkpoint_dir: "outputs/checkpoints"
+
