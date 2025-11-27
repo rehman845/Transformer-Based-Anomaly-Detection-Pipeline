@@ -29,7 +29,8 @@ python -m venv .venv && source .venv/bin/activate      # or .venv\\Scripts\\acti
 pip install -r requirements.txt
 python scripts/download_dataset.py --name smd          # downloads Server Machine Dataset
 python -m src.training.run --config configs/default.yaml --data_root data/raw --output_dir outputs
-python scripts/evaluate.py --scores outputs/scores.npy --labels outputs/labels.npy --output outputs/eval
+python scripts/evaluate.py --scores outputs/scores.npy --labels outputs/labels.npy --output outputs/eval --sweep
+python scripts/plot_losses.py --history outputs/history.json --output outputs/losses.png
 ```
 
 Artifacts (checkpoints, metrics, plots) are saved under `outputs/`.
@@ -68,11 +69,11 @@ Artifacts (checkpoints, metrics, plots) are saved under `outputs/`.
 ## Evaluation
 
 - **Metrics:** Precision, recall, F1, ROC-AUC, PR-AUC, and anomaly ratios (ground truth vs predicted) via `src/eval/metrics.py`.
-- **Thresholding:** Percentile-based (configurable, default 95th) computed on validation/test scores.
-- **Visualization:** `src/eval/visualize.py` plots anomaly scores with the selected threshold and annotated anomalies.
+- **Thresholding:** Percentile-based (configurable, default 95th). Pass `--sweep` to scan 80–99.9\% and record the best F1 score, along with `metrics_best.json`, `threshold_sweep.csv`, and `f1_vs_threshold.png`.
+- **Visualization:** `src/eval/visualize.py` plots anomaly scores, score distributions, ROC/PR curves, training losses, and the new F1-vs-threshold curve.
 - **Workflow:** `scripts/evaluate.py` consumes the saved `scores.npy` and `labels.npy`, writes metrics/plots to `outputs/eval/`.
-- **Artifacts produced:** `scores.png` (anomaly scores), `roc.png`, `precision_recall.png`, and `metrics.json` (contains precision/recall/F1/ROC-AUC/PR-AUC + anomaly ratios).
-- **Class ratios:** Evaluation metrics now include `positive_ratio_ground_truth` and `positive_ratio_predictions` so you can monitor anomaly prevalence and detector aggressiveness per dataset.
+- **Artifacts produced:** `scores.png`, `score_distribution.png`, `roc.png`, `precision_recall.png`, `f1_vs_threshold.png`, `metrics.json`, `metrics_best.json`, `threshold_sweep.csv`, plus `losses.png`.
+- **Class ratios:** Metrics now include `anomaly_ratio` and `predicted_anomaly_ratio` so detector aggressiveness can be monitored for each dataset or threshold.
 
 ## Results
 
@@ -83,23 +84,22 @@ Artifacts (checkpoints, metrics, plots) are saved under `outputs/`.
 
 ### Performance Metrics
 
-The framework was evaluated on the SMD test set with a threshold set at the 95th percentile of anomaly scores:
+The framework was evaluated on SMD `machine-1-1` using (i) the default 95th-percentile threshold and (ii) the best F1 score discovered during the sweep:
 
-| Metric | Value |
-|--------|-------|
-| **ROC-AUC** | **0.950** |
-| **PR-AUC** | **0.761** |
-| **Precision** | **0.911** |
-| **Recall** | **0.357** |
-| **F1-Score** | **0.513** |
-| **Threshold** | 66.26 |
+| Metric | Baseline (95th pct) | Best F1 (88.06 pct) |
+|--------|--------------------|---------------------|
+| **ROC-AUC** | 0.9508 | 0.9508 |
+| **PR-AUC** | 0.7618 | 0.7618 |
+| **Precision** | 0.9111 | 0.7453 |
+| **Recall** | 0.3565 | 0.6870 |
+| **F1-Score** | 0.5125 | **0.7149** |
+| **Threshold** | 66.12 | 13.56 |
 
 ### Analysis
 
-- **High discriminative ability:** ROC-AUC of 0.950 indicates the model effectively separates normal and anomalous patterns in the learned representation space.
-- **Strong precision:** With precision of 0.911, the model produces very few false positives—when it flags an anomaly, it is highly likely to be correct.
-- **Conservative detection:** The recall of 0.357 suggests the model prioritizes precision over recall, which is appropriate for scenarios where false alarms are costly.
-- **Balanced F1:** The F1-score of 0.513 reflects the precision-recall trade-off, which can be adjusted by tuning the threshold percentile.
+- **High discriminative ability:** ROC/PR AUCs around 0.95 / 0.76 confirm strong ranking ability regardless of threshold.
+- **Two operating points:** The 95th-percentile baseline prioritizes precision (0.91) with conservative recall (0.36), whereas the sweep finds percentile 88.06 (threshold 13.56) that doubles recall (0.69) and pushes F1 to 0.71 while keeping precision respectable (0.75).
+- **Detector aggressiveness:** Metrics report both actual and predicted anomaly ratios so you can justify whichever operating point is chosen (high precision vs. balanced F1).
 
 ### Visualization
 
@@ -136,9 +136,9 @@ Open `notebooks/colab_training.ipynb` in Google Colab:
 ## Demonstrating Anomaly Detection
 
 1. Train on SMD (default) or another dataset using the Colab notebook or local setup.
-2. Run `scripts/evaluate.py` to compute metrics and produce `scores.png`.
-3. Inspect the plot to confirm high anomaly scores align with labeled anomalies.
-4. Review the metrics in `outputs/eval/metrics.json` for quantitative performance.
+2. Run `scripts/evaluate.py --sweep` to compute baseline metrics, scan thresholds, and generate all plots.
+3. Inspect `scores.png`, `score_distribution.png`, `roc.png`, `precision_recall.png`, `f1_vs_threshold.png`, and `losses.png` to confirm alignment with labeled anomalies.
+4. Review `outputs/eval/metrics.json` (baseline) and `outputs/eval/metrics_best.json` (best F1) for quantitative performance.
 5. See the **Results** section above for example outputs from the SMD dataset.
 
 **Inspecting training losses:** to verify all four loss components during retraining, generate the loss plot:
