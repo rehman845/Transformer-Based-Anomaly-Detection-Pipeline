@@ -84,6 +84,19 @@ def plot_score_distribution(scores: np.ndarray, labels: np.ndarray, path: str | 
     plt.close()
 
 
+def plot_threshold_curve(thresholds: np.ndarray, metric_values: np.ndarray, ylabel: str, path: str | Path) -> None:
+    plt.figure(figsize=(6, 4))
+    plt.plot(thresholds, metric_values, marker="o", linewidth=1.5)
+    plt.xlabel("Threshold")
+    plt.ylabel(ylabel)
+    plt.title(f"{ylabel} vs Threshold")
+    plt.grid(True, linestyle="--", alpha=0.4)
+    plt.tight_layout()
+    path = _prepare_path(path)
+    plt.savefig(path)
+    plt.close()
+
+
 def plot_score_distribution(scores: np.ndarray, labels: np.ndarray, path: str | Path) -> None:
     plt.figure(figsize=(6, 4))
     normal_scores = scores[labels == 0]

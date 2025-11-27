@@ -1,13 +1,24 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_fscore_support, roc_auc_score
 
 
-def compute_metrics(scores: np.ndarray, labels: np.ndarray, percentile: float = 95.0) -> Dict[str, float]:
-    threshold = np.percentile(scores, percentile)
+def compute_metrics(
+    scores: np.ndarray,
+    labels: np.ndarray,
+    percentile: Optional[float] = 95.0,
+    explicit_threshold: Optional[float] = None,
+) -> Dict[str, float]:
+    if explicit_threshold is not None:
+        threshold = explicit_threshold
+    elif percentile is not None:
+        threshold = np.percentile(scores, percentile)
+    else:
+        raise ValueError("Either percentile or explicit_threshold must be provided.")
+
     preds = (scores >= threshold).astype(int)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average="binary", zero_division=0)
 
